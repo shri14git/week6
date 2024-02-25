@@ -1,0 +1,80 @@
+// Import required modules
+const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+
+// Initialize Express app
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(bodyParser.json());
+
+// MongoDB connection
+mongoose.connect('mongodb://localhost:27017/food_nutrition_db', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+db.once('open', () => {
+    console.log('Connected to MongoDB');
+});
+
+// Define schema for food and nutrition data
+const foodSchema = new mongoose.Schema({
+    name: String,
+    foodGroup: String,
+    description: String,
+    nutritionalInformation: {
+        calories: Number,
+        protein: Number,
+        carbs: Number,
+        fat: Number,
+        fiber: Number,
+        sodium: Number,
+        cholesterol: Number
+    },
+    servingSize: String,
+    allergens: [String],
+    ingredients: [String],
+    preparationMethods: String,
+    certifications: [String],
+    countryOfOrigin: String,
+    brandOrManufacturer: String,
+    dietaryRestrictions: [String],
+    healthBenefits: [String],
+    bestPractices: String
+});
+
+const Food = mongoose.model('Food', foodSchema);
+
+// Routes
+// Create a new food item
+app.post('/foods', async (req, res) => {
+    try {
+        const foodData = req.body;
+        const food = new Food(foodData);
+        await food.save();
+        res.status(201).json({ message: 'Food added successfully', food });
+    } catch (error) {
+        console.error('Error adding food:', error);
+        res.status(500).json({ error: 'Failed to add food' });
+    }
+});
+
+// Retrieve all food items
+app.get('/foods', async (req, res) => {
+    try {
+        const foods = await Food.find();
+        res.json(foods);
+    } catch (error) {
+        console.error('Error retrieving foods:', error);
+        res.status(500).json({ error: 'Failed to retrieve foods' });
+    }
+});
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
